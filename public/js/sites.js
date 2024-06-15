@@ -55,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (controlChannel.voiceChannels) {
                         controlChannel.voiceChannels.forEach(voiceChannel => {
                             const existingVoiceChannelDiv = document.getElementById(`voice-channel-${voiceChannel.channelNo}`);
-                            if (voiceChannel.tx) {
+
+                            if (voiceChannel.tx && voiceChannel.lastSrcId !== 0 && voiceChannel.lastDstId !== 0) {
                                 if (!existingVoiceChannelDiv) {
                                     const voiceChannelDiv = document.createElement('div');
                                     voiceChannelDiv.className = 'voice-channel card mb-2 keyed';

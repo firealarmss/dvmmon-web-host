@@ -52,6 +52,11 @@ class Server {
             res.render('index', { user: req.session.user });
         });
 
+        this.app.get('/affiliations', async (req, res) => {
+            const affiliations = await this.fetchAllAffiliations();
+            res.render('affiliations', { affiliations, user: req.session.user });
+        });
+
         this.app.get('/login', (req, res) => {
             res.render('login');
         });
@@ -119,7 +124,7 @@ class Server {
         this.io.on('connection', (socket) => {
             socket.on('disconnect', () => {});
 
-            this.fetchAllData().then(data => {
+            this.fetchAllChannelData().then(data => {
                 if (data && !data.cc_error_state) {
                     socket.emit('update', data);
                 }
@@ -127,7 +132,40 @@ class Server {
         });
     }
 
-    async fetchData(address, port, password) {
+    async fetchAffiliations(address, port, password) {
+        try {
+            const restClient = new RESTClient(address, port, password, false, console);
+            return await restClient.send('GET', '/p25/report-affiliations', {}); // TODO: Add ability for the other modes
+        } catch (error) {
+            console.error(`Error fetching data from ${address}:${port}`, error);
+            return null;
+        }
+    }
+
+    async fetchAllAffiliations() {
+        const allAffiliations = [];
+
+        for (const site of this.config.sites) {
+            if (site.controlChannels) {
+                for (const controlChannelConfig of site.controlChannels) {
+                    const affiliations = await this.fetchAffiliations(controlChannelConfig.restAddress,
+                        controlChannelConfig.restPort, controlChannelConfig.restPassword);
+
+                    if (affiliations && affiliations.status === 200) {
+                        allAffiliations.push({
+                            site: site.name,
+                            controlChannel: controlChannelConfig.restAddress,
+                            affiliations: affiliations.affiliations
+                        });
+                    }
+                }
+            }
+        }
+
+        return allAffiliations;
+    }
+
+    async fetchChannelData(address, port, password) {
         try {
             const restClient = new RESTClient(address, port, password, false, console);
             return await restClient.send('GET', '/status', {});
@@ -137,7 +175,7 @@ class Server {
         }
     }
 
-    async fetchAllData() {
+    async fetchAllChannelData() {
         const allData = { sites: [] };
         let cc_error_state = false;
 
@@ -146,7 +184,9 @@ class Server {
 
             if (site.controlChannels) {
                 for (const controlChannelConfig of site.controlChannels) {
-                    const controlChannelData = await this.fetchData(controlChannelConfig.restAddress, controlChannelConfig.restPort, controlChannelConfig.restPassword);
+                    const controlChannelData = await this.fetchChannelData(controlChannelConfig.restAddress,
+                        controlChannelConfig.restPort, controlChannelConfig.restPassword);
+
                     if (controlChannelData && controlChannelData.status === 200) {
                         const controlChannel = {
                             ...controlChannelData,
@@ -157,7 +197,9 @@ class Server {
                         };
 
                         for (const voiceChannelConfig of site.voiceChannels) {
-                            const voiceChannelData = await this.fetchData(voiceChannelConfig.restAddress, voiceChannelConfig.restPort, voiceChannelConfig.restPassword);
+                            const voiceChannelData = await this.fetchChannelData(voiceChannelConfig.restAddress,
+                                voiceChannelConfig.restPort, voiceChannelConfig.restPassword);
+
                             if (voiceChannelData) {
                                 controlChannel.voiceChannels.push(voiceChannelData);
                                 this.logVoiceChannelActivity(site.name, controlChannel, voiceChannelData);
@@ -174,7 +216,9 @@ class Server {
 
             if (site.repeaters) {
                 for (const repeaterConfig of site.repeaters) {
-                    const repeaterData = await this.fetchData(repeaterConfig.restAddress, repeaterConfig.restPort, repeaterConfig.restPassword);
+                    const repeaterData = await this.fetchChannelData(repeaterConfig.restAddress,
+                        repeaterConfig.restPort, repeaterConfig.restPassword);
+
                     if (repeaterData) {
                         siteData.repeaters.push({
                             ...repeaterData,
@@ -195,11 +239,6 @@ class Server {
     }
 
     logVoiceChannelActivity(siteName, controlChannel, voiceChannelData) {
-        if (!voiceChannelData || voiceChannelData.lastSrcId === 0 || voiceChannelData.lastDstId === 0) {
-            // For now returning, it may be better to log this as an invalid call. Still not sure.
-            return;
-        }
-
         if (!controlChannel) {
             controlChannel = { channelNo: 'repeater' };
         }
@@ -207,10 +246,15 @@ class Server {
         const channelKey = `${siteName}-${controlChannel.channelNo}-${voiceChannelData.channelNo}`;
         const previousState = this.previousVoiceChannelStates.get(channelKey) || { tx: false };
 
+        if ((!voiceChannelData || voiceChannelData.lastSrcId === 0 || voiceChannelData.lastDstId === 0) && !previousState.tx) {
+            // For now returning, it may be better to log this as an invalid call. Still not sure.
+            return;
+        }
+
         if (voiceChannelData.tx && !previousState.tx) {
             console.log(`Call started on ${channelKey}, srcId: ${voiceChannelData.lastSrcId}, dstId: ${voiceChannelData.lastDstId}`);
         } else if (!voiceChannelData.tx && previousState.tx) {
-            console.log(`Call ended on ${channelKey}, srcId: ${voiceChannelData.lastSrcId}, dstId: ${voiceChannelData.lastDstId}`);
+            console.log(`Call ended on ${channelKey}, srcId: ${previousState.lastSrcId}, dstId: ${previousState.lastDstId}`);
         }
 
         this.previousVoiceChannelStates.set(channelKey, voiceChannelData);
@@ -218,7 +262,7 @@ class Server {
 
     start() {
         setInterval(async () => {
-            const data = await this.fetchAllData();
+            const data = await this.fetchAllChannelData();
             if (data && !data.cc_error_state) {
                 this.io.emit('update', data);
             }

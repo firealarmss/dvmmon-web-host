@@ -79,7 +79,11 @@ body.dark-mode .btn-secondary {
     color: white;
 }
 
-/* Modal styling for dark mode */
+.card-header.dark-mode {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
 body.dark-mode .modal-content {
     background-color: #1c1c1c;
     color: #ffffff;

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P25 Affiliations</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+</head>
+<body>
+<%- include('partials/header', { user: user }) %>
+
+<div class="container">
+    <h1 class="mt-5">P25 Affiliations</h1>
+
+    <% affiliations.forEach(affiliation => { %>
+        <div class="card mb-3">
+            <div class="card-header">
+                Site: <%= affiliation.site %> | Control Channel: <%= affiliation.controlChannel %>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th>Group ID</th>
+                        <th>Source ID</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% affiliation.affiliations.forEach(a => { %>
+                        <tr>
+                            <td><%= a.grpId %></td>
+                            <td><%= a.srcId %></td>
+                        </tr>
+                    <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <% }); %>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script src="/js/viewMode.js"></script>
+</body>
+</html>
