@@ -1,0 +1,22 @@
+# Address to bind the server to
+address: 0.0.0.0
+# Port to bind the server to
+port: 3000
+
+# List of sites to monitor
+sites:
+  - name: "Site 1"
+    controlChannels:
+      - restAddress: 127.0.0.1
+        restPort: 9990
+        restPassword: PASSWORD
+    voiceChannels:
+      - restAddress: 127.0.0.1
+        restPort: 9991
+        restPassword: PASSWORD
+
+  - name: "Site 2"
+    repeaters:
+      - restAddress: 127.0.0.1
+        restPort: 9992
+        restPassword: PASSWORD
