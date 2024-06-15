@@ -14,10 +14,14 @@ class Server {
         this.config = this.loadConfig();
         this.address = this.config.address;
         this.port = this.config.port;
+
         this.dbManager = new DBManager(path.join(__dirname, '../db/users.db'));
         this.app = express();
         this.server = http.createServer(this.app);
         this.io = socketIo(this.server);
+
+        this.previousVoiceChannelStates = new Map();
+
         this.setupMiddleware();
         this.setupRoutes();
         this.setupSocketIO();
@@ -64,7 +68,7 @@ class Server {
         });
 
         this.app.get('/users', async (req, res) => {
-            if (!req.session.user || req.session.user.username !== 'admin') {
+            if (!req.session.user) {
                 return res.status(401).render('login', { error: 'Unauthorized' });
             }
 
@@ -156,6 +160,7 @@ class Server {
                             const voiceChannelData = await this.fetchData(voiceChannelConfig.restAddress, voiceChannelConfig.restPort, voiceChannelConfig.restPassword);
                             if (voiceChannelData) {
                                 controlChannel.voiceChannels.push(voiceChannelData);
+                                this.logVoiceChannelActivity(site.name, controlChannel, voiceChannelData);
                             }
                         }
 
@@ -177,6 +182,7 @@ class Server {
                             port: repeaterConfig.restPort,
                             password: repeaterConfig.restPassword
                         });
+                        this.logVoiceChannelActivity(site.name, null, repeaterData);
                     }
                 }
             }
@@ -186,6 +192,28 @@ class Server {
 
         allData.cc_error_state = cc_error_state;
         return allData;
+    }
+
+    logVoiceChannelActivity(siteName, controlChannel, voiceChannelData) {
+        if (!voiceChannelData || voiceChannelData.lastSrcId === 0 || voiceChannelData.lastDstId === 0) {
+            // For now returning, it may be better to log this as an invalid call. Still not sure.
+            return;
+        }
+
+        if (!controlChannel) {
+            controlChannel = { channelNo: 'repeater' };
+        }
+
+        const channelKey = `${siteName}-${controlChannel.channelNo}-${voiceChannelData.channelNo}`;
+        const previousState = this.previousVoiceChannelStates.get(channelKey) || { tx: false };
+
+        if (voiceChannelData.tx && !previousState.tx) {
+            console.log(`Call started on ${channelKey}, srcId: ${voiceChannelData.lastSrcId}, dstId: ${voiceChannelData.lastDstId}`);
+        } else if (!voiceChannelData.tx && previousState.tx) {
+            console.log(`Call ended on ${channelKey}, srcId: ${voiceChannelData.lastSrcId}, dstId: ${voiceChannelData.lastDstId}`);
+        }
+
+        this.previousVoiceChannelStates.set(channelKey, voiceChannelData);
     }
 
     start() {
