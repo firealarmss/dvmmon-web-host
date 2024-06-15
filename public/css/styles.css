@@ -1,5 +1,53 @@
 body {
     background-color: #f8f9fa;
+    color: #000;
+}
+
+body.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+.navbar {
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.navbar-light .navbar-brand,
+.navbar-light .nav-item .btn {
+    color: rgba(0, 0, 0, 0.9);
+}
+
+.navbar-dark {
+    background-color: #1c1c1c;
+}
+
+.navbar-dark .navbar-brand,
+.navbar-dark .navbar-nav .nav-link,
+.navbar-dark .nav-item .btn {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-dark-mode {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
+.btn-dark-mode:hover {
+    background-color: #5a5a5a;
+}
+
+body.dark-mode .btn {
+    color: #ffffff;
+}
+
+body.dark-mode .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+body.dark-mode .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
 }
 
 .site-box {
@@ -29,4 +77,23 @@ body {
 .voice-channel.keyed {
     background-color: #28a745;
     color: white;
+}
+
+/* Modal styling for dark mode */
+body.dark-mode .modal-content {
+    background-color: #1c1c1c;
+    color: #ffffff;
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+    border-color: #444;
+}
+
+body.dark-mode .modal-title {
+    color: #ffffff;
+}
+
+.navbar-brand.fixed-color {
+    color: #000 !important;
 }

@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
 </head>
 <body>
+<%- include('partials/header', { user: null }) %>
 <div class="container">
     <h1 class="mt-5">Login</h1>
     <form action="/login" method="post">
@@ -21,5 +23,7 @@
         <button type="submit" class="btn btn-primary">Login</button>
     </form>
 </div>
+
+<script src="/js/viewMode.js"></script>
 </body>
 </html>

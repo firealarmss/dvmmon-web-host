@@ -69,7 +69,7 @@ class Server {
             }
 
             const users = await this.dbManager.getAllUsers();
-            res.render('users', { users });
+            res.render('users', { users, user: req.session.user });
         });
 
         this.app.post('/users/add', async (req, res) => {
